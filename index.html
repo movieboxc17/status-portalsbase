@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raspberry Pi Status</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+    .status-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 1.5em;
+    }
+    .led {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: gray;
+      box-shadow: 0 0 5px #000;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    .online {
+      background-color: #4caf50;
+      box-shadow: 0 0 15px #4caf50;
+    }
+    .offline {
+      background-color: #f44336;
+      box-shadow: 0 0 15px #f44336;
+    }
+  </style>
+</head>
+<body>
+  <h1>Raspberry Pi Status</h1>
+  <div class="status-container">
+    <div id="led" class="led offline"></div>
+    <span id="status-text">Checking...</span>
+  </div>
+
+  <script>
+    const piUrl = 'https://majority-dropped-push-prague.trycloudflare.com/ping'; // Your Cloudflare Tunnel URL
+    const led = document.getElementById('led');
+    const statusText = document.getElementById('status-text');
+
+    async function checkPi() {
+      try {
+        const response = await fetch(piUrl, { cache: 'no-cache' });
+        if (response.ok) {
+          statusText.textContent = 'Online';
+          led.classList.remove('offline');
+          led.classList.add('online');
+        } else {
+          statusText.textContent = 'Offline';
+          led.classList.remove('online');
+          led.classList.add('offline');
+        }
+      } catch (err) {
+        statusText.textContent = 'Offline';
+        led.classList.remove('online');
+        led.classList.add('offline');
+      }
+    }
+
+    // Initial check
+    checkPi();
+    // Check every 10 seconds
+    setInterval(checkPi, 10000);
+  </script>
+</body>
+</html>
