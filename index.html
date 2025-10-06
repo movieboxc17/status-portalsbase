@@ -10,7 +10,8 @@
       --card: #0a1122;
       --muted: #9ca3af;
       --ok: #10b981;
-      --fail: #f97316; /* Changed to orange */
+      --error: #f97316; /* orange for errors/timeouts */
+      --fail: #ef4444;  /* red for offline */
       --accent: #3b82f6;
       --glow: 0 0 20px rgba(59,130,246,0.6);
     }
@@ -75,9 +76,14 @@
       transition: background 0.3s, box-shadow 0.3s;
     }
     .ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+    .error { background: var(--error); box-shadow: 0 0 10px var(--error); }
     .down { background: var(--fail); box-shadow: 0 0 10px var(--fail); }
     .unknown { background: #6b7280; }
     .time { color: var(--muted); font-size: 0.9rem; }
+
+    .status-text.ok { color: var(--ok); font-weight: 600; }
+    .status-text.error { color: var(--error); font-weight: 600; }
+    .status-text.down { color: var(--fail); font-weight: 600; }
 
     .btn-view {
       background: var(--accent);
@@ -149,7 +155,7 @@
         <div style="font-weight:600">${host}</div>
         <div><div class="dot unknown" id="dot-${idx}"></div></div>
         <div><div class="time" id="time-${idx}">—</div></div>
-        <div id="response-${idx}" class="time">—</div>
+        <div id="response-${idx}" class="time status-text">—</div>
         <div><button class="btn-view" onclick="window.open('https://${host}', '_blank')">View Page</button></div>
       `;
       sitesContainer.appendChild(row);
@@ -171,15 +177,17 @@
     dot.className = 'dot unknown';
     timeEl.textContent = 'checking...';
     respEl.textContent = '—';
+    respEl.className = 'time status-text';
 
     let handled = false;
     const img = new Image();
     const start = Date.now();
     let timeout = setTimeout(()=>{
       if (handled) return; handled = true;
-      dot.className = 'dot down';
+      dot.className = 'dot error';
       timeEl.textContent = 'timeout';
-      respEl.textContent = 'Offline';
+      respEl.textContent = 'Error';
+      respEl.classList.add('error');
     }, 10000);
 
     img.onload = () => {
@@ -187,18 +195,31 @@
       dot.className = 'dot ok';
       const ms = Date.now() - start; timeEl.textContent = ms + ' ms';
       respEl.textContent = 'Online';
+      respEl.classList.add('ok');
     };
     img.onerror = () => {
       if (handled) return;
       fetch(url, {method: 'HEAD'})
         .then(resp => {
           handled = true; clearTimeout(timeout);
-          if (resp.ok) { dot.className = 'dot ok'; timeEl.textContent = (Date.now()-start)+' ms'; respEl.textContent = 'Online'; }
-          else { dot.className = 'dot down'; timeEl.textContent = resp.status+' '+resp.statusText; respEl.textContent = 'Error'; }
+          if (resp.ok) { 
+            dot.className = 'dot ok'; 
+            timeEl.textContent = (Date.now()-start)+' ms'; 
+            respEl.textContent = 'Online'; 
+            respEl.classList.add('ok');
+          } else { 
+            dot.className = 'dot error'; 
+            timeEl.textContent = resp.status+' '+resp.statusText; 
+            respEl.textContent = 'Error'; 
+            respEl.classList.add('error');
+          }
         })
         .catch(()=>{
           if (handled) return; handled = true; clearTimeout(timeout);
-          dot.className = 'dot down'; timeEl.textContent = 'error'; respEl.textContent = 'Offline';
+          dot.className = 'dot down';
+          timeEl.textContent = 'offline';
+          respEl.textContent = 'Offline';
+          respEl.classList.add('down');
         });
     };
     img.src = url + '?_=' + Date.now();
