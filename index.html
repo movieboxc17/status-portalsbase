@@ -1,78 +1,191 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Raspberry Pi Status</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Askansz — Status Page</title>
   <style>
+    :root {
+      --bg: #020617;
+      --card: #0a1122;
+      --muted: #9ca3af;
+      --ok: #10b981;
+      --fail: #ef4444;
+      --accent: #3b82f6;
+      --glow: 0 0 20px rgba(59,130,246,0.6);
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: 'Inter', ui-sans-serif, system-ui;
+      background: radial-gradient(circle at top left, #0f172a 0%, #020617 80%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 960px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f0f0f0;
+      gap: 1.5rem;
     }
-    .status-container {
+    header {
       display: flex;
       align-items: center;
-      gap: 15px;
-      font-size: 1.5em;
+      gap: 1rem;
+      background: rgba(255,255,255,0.03);
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      box-shadow: var(--glow);
     }
-    .led {
-      width: 20px;
-      height: 20px;
+    h1 { margin: 0; font-size: 1.5rem; }
+    p.lead { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 1rem;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 0 25px rgba(0,0,0,0.3);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 100px 120px 120px;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .head { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dot {
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background-color: gray;
-      box-shadow: 0 0 5px #000;
-      transition: background-color 0.3s, box-shadow 0.3s;
+      background: #64748b;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+      transition: background 0.3s, box-shadow 0.3s;
     }
-    .online {
-      background-color: #4caf50;
-      box-shadow: 0 0 15px #4caf50;
+    .ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+    .down { background: var(--fail); box-shadow: 0 0 10px var(--fail); }
+    .unknown { background: #6b7280; }
+    .time { color: var(--muted); font-size: 0.9rem; }
+    footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--muted);
     }
-    .offline {
-      background-color: #f44336;
-      box-shadow: 0 0 15px #f44336;
-    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>Raspberry Pi Status</h1>
-  <div class="status-container">
-    <div id="led" class="led offline"></div>
-    <span id="status-text">Checking...</span>
+  <div class="wrap">
+    <header>
+      <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(180deg,var(--accent),#2563eb);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.3rem;">A</div>
+      <div>
+        <h1>Askansz — Status Page</h1>
+        <p class="lead">Automatically checks these domains every 5 seconds.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="grid" style="margin-bottom:0.5rem;font-weight:700;">
+        <div class="head">Service</div>
+        <div class="head">Status</div>
+        <div class="head">Last checked</div>
+        <div class="head">Response</div>
+      </div>
+      <div id="sites"></div>
+    </section>
   </div>
 
-  <script>
-    const piUrl = 'https://majority-dropped-push-prague.trycloudflare.com/ping';
-    const led = document.getElementById('led');
-    const statusText = document.getElementById('status-text');
+<script>
+(() => {
+  // Only these three sites are checked by default. Edit this array in the source to change.
+  const DEFAULT_SITES = [
+    'example.com',
+    'example.com',
+    'example.com'
+  ];
 
-    async function checkPi() {
-      try {
-        const response = await fetch(piUrl, { cache: 'no-cache' });
-        if (response.ok) {
-          statusText.textContent = 'Online';
-          led.classList.remove('offline');
-          led.classList.add('online');
-        } else {
-          statusText.textContent = 'Offline';
-          led.classList.remove('online');
-          led.classList.add('offline');
-        }
-      } catch (err) {
-        statusText.textContent = 'Offline';
-        led.classList.remove('online');
-        led.classList.add('offline');
-      }
-    }
+  const sitesContainer = document.getElementById('sites');
+  const sites = DEFAULT_SITES.slice();
 
-    // Initial check
-    checkPi();
-    // Check every 10 seconds
-    setInterval(checkPi, 10000);
-  </script>
+  function render() {
+    sitesContainer.innerHTML = '';
+    sites.forEach((host, idx) => {
+      const row = document.createElement('div');
+      row.className = 'grid';
+      row.innerHTML = `
+        <div style="font-weight:600">${host}</div>
+        <div><div class="dot unknown" id="dot-${idx}"></div></div>
+        <div><div class="time" id="time-${idx}">—</div></div>
+        <div id="response-${idx}" class="time">—</div>
+      `;
+      sitesContainer.appendChild(row);
+    });
+  }
+
+  function normalizeUrl(host) {
+    if (!/^https?:\/\//i.test(host)) host = 'https://' + host;
+    return host.replace(/\/$/,'') + '/favicon.ico';
+  }
+
+  function checkSite(i) {
+    const host = sites[i];
+    const url = normalizeUrl(host);
+    const dot = document.getElementById('dot-' + i);
+    const timeEl = document.getElementById('time-' + i);
+    const respEl = document.getElementById('response-' + i);
+    if (!dot || !timeEl) return;
+    dot.className = 'dot unknown';
+    timeEl.textContent = 'checking...';
+    respEl.textContent = '—';
+
+    let handled = false;
+    const img = new Image();
+    const start = Date.now();
+    let timeout = setTimeout(()=>{
+      if (handled) return; handled = true;
+      dot.className = 'dot down';
+      timeEl.textContent = 'timeout';
+      respEl.textContent = 'Offline';
+    }, 10000);
+
+    img.onload = () => {
+      if (handled) return; handled = true; clearTimeout(timeout);
+      dot.className = 'dot ok';
+      const ms = Date.now() - start; timeEl.textContent = ms + ' ms';
+      respEl.textContent = 'Online';
+    };
+    img.onerror = () => {
+      if (handled) return;
+      fetch(url, {method: 'HEAD'})
+        .then(resp => {
+          handled = true; clearTimeout(timeout);
+          if (resp.ok) { dot.className = 'dot ok'; timeEl.textContent = (Date.now()-start)+' ms'; respEl.textContent = 'Online'; }
+          else { dot.className = 'dot down'; timeEl.textContent = resp.status+' '+resp.statusText; respEl.textContent = 'Error'; }
+        })
+        .catch(()=>{
+          if (handled) return; handled = true; clearTimeout(timeout);
+          dot.className = 'dot down'; timeEl.textContent = 'error'; respEl.textContent = 'Offline';
+        });
+    };
+    img.src = url + '?_=' + Date.now();
+  }
+
+  function checkAll() {
+    sites.forEach((s, i) => checkSite(i));
+  }
+
+  render();
+  setTimeout(checkAll, 500);
+  setInterval(checkAll, 5000);
+})();
+</script>
 </body>
 </html>
