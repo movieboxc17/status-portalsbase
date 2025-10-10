@@ -164,7 +164,7 @@
 
   function normalizeUrl(host) {
     if (!/^https?:\/\//i.test(host)) host = 'https://' + host;
-    return host.replace(/\/$/,'') + '/favicon.ico';
+    return host.replace(/\/$/,'') + '/';
   }
 
   function checkSite(i) {
@@ -180,7 +180,6 @@
     respEl.className = 'time status-text';
 
     let handled = false;
-    const img = new Image();
     const start = Date.now();
     let timeout = setTimeout(()=>{
       if (handled) return; handled = true;
@@ -190,39 +189,28 @@
       respEl.classList.add('error');
     }, 10000);
 
-    img.onload = () => {
-      if (handled) return; handled = true; clearTimeout(timeout);
-      dot.className = 'dot ok';
-      const ms = Date.now() - start; timeEl.textContent = ms + ' ms';
-      respEl.textContent = 'Online';
-      respEl.classList.add('ok');
-    };
-    img.onerror = () => {
-      if (handled) return;
-      fetch(url, {method: 'HEAD'})
-        .then(resp => {
-          handled = true; clearTimeout(timeout);
-          if (resp.ok) { 
-            dot.className = 'dot ok'; 
-            timeEl.textContent = (Date.now()-start)+' ms'; 
-            respEl.textContent = 'Online'; 
-            respEl.classList.add('ok');
-          } else { 
-            dot.className = 'dot error'; 
-            timeEl.textContent = resp.status+' '+resp.statusText; 
-            respEl.textContent = 'Error'; 
-            respEl.classList.add('error');
-          }
-        })
-        .catch(()=>{
-          if (handled) return; handled = true; clearTimeout(timeout);
-          dot.className = 'dot down';
-          timeEl.textContent = 'offline';
-          respEl.textContent = 'Offline';
-          respEl.classList.add('down');
-        });
-    };
-    img.src = url + '?_=' + Date.now();
+    fetch(url, {method: 'HEAD'})
+      .then(resp => {
+        handled = true; clearTimeout(timeout);
+        if (resp.ok) { 
+          dot.className = 'dot ok'; 
+          timeEl.textContent = (Date.now()-start)+' ms'; 
+          respEl.textContent = 'Online'; 
+          respEl.classList.add('ok');
+        } else { 
+          dot.className = 'dot error'; 
+          timeEl.textContent = resp.status+' '+resp.statusText; 
+          respEl.textContent = 'Error'; 
+          respEl.classList.add('error');
+        }
+      })
+      .catch(()=>{
+        if (handled) return; handled = true; clearTimeout(timeout);
+        dot.className = 'dot down';
+        timeEl.textContent = 'offline';
+        respEl.textContent = 'Offline';
+        respEl.classList.add('down');
+      });
   }
 
   function checkAll() {
